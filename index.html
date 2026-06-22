@@ -1,5 +1,1254 @@
 <!DOCTYPE html>
-<html>
-<head><title>Café Borbone</title></head>
-<body><h1>Café Borbone App</h1></body>
+<html lang="es">
+<head>
+<base target="_top">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Café Borbone</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --azul:#1565c0;--azul2:#1251a3;--verde:#2e7d32;--rojo:#c62828;--naranja:#ef6c00;
+  --gris1:#f3f4f6;--gris2:#e5e7eb;--gris3:#9ca3af;--gris4:#6b7280;--gris5:#374151;--negro:#1f2937;
+  --blanco:#ffffff;--radio:14px;--sombra:0 2px 12px rgba(0,0,0,.10);
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:15px;color:var(--negro);background:var(--gris1)}
+
+/* ── LOGIN ── */
+#login{position:fixed;inset:0;background:linear-gradient(160deg,#1565c0 0%,#0d47a1 60%,#01579b 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;z-index:999}
+.login-logo{width:80px;height:80px;background:white;border-radius:20px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+.login-logo img{width:60px;object-fit:contain}
+.login-title{color:white;font-size:22px;font-weight:700;margin-bottom:4px;letter-spacing:-.3px}
+.login-sub{color:rgba(255,255,255,.65);font-size:13px;margin-bottom:32px}
+.login-card{background:white;border-radius:20px;padding:28px 24px;width:100%;max-width:360px;box-shadow:0 16px 48px rgba(0,0,0,.2)}
+.login-label{font-size:12px;font-weight:600;color:var(--gris5);margin-bottom:6px;display:block}
+.login-input{width:100%;padding:14px 16px;border:1.5px solid var(--gris2);border-radius:12px;font-size:16px;color:var(--negro);margin-bottom:14px;background:var(--gris1)}
+.login-input:focus{outline:none;border-color:var(--azul);background:white}
+.login-btn{width:100%;background:var(--azul);color:white;border:none;padding:16px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-top:4px}
+.login-btn:active{background:var(--azul2)}
+.login-btn:disabled{background:#93c5fd}
+.login-err{color:var(--rojo);font-size:13px;text-align:center;margin-top:10px;display:none}
+
+/* ── APP SHELL ── */
+#app{display:none;position:fixed;inset:0;flex-direction:column}
+#app.visible{display:flex}
+
+/* Top bar */
+.topbar{background:var(--azul);color:white;padding:12px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;padding-top:max(12px,env(safe-area-inset-top))}
+.topbar-back{background:rgba(255,255,255,.15);border:none;color:white;width:36px;height:36px;border-radius:10px;font-size:20px;cursor:pointer;display:none;align-items:center;justify-content:center}
+.topbar-back.vis{display:flex}
+.topbar-title{font-size:17px;font-weight:700;flex:1}
+.topbar-avatar{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.2);color:white;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,.3)}
+.topbar-notif{position:relative;margin-right:4px}
+.notif-dot{position:absolute;top:-2px;right:-2px;width:8px;height:8px;background:#ef4444;border-radius:50%;border:2px solid var(--azul);display:none}
+.notif-dot.on{display:block}
+
+/* Scroll content */
+#content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;padding-bottom:90px}
+
+/* Bottom nav */
+.botnav{background:white;border-top:1px solid var(--gris2);display:flex;padding-bottom:max(8px,env(safe-area-inset-bottom));flex-shrink:0}
+.botnav-btn{flex:1;border:none;background:none;padding:10px 4px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--gris3);font-size:10px;font-weight:600;transition:color .15s}
+.botnav-btn.on{color:var(--azul)}
+.botnav-icon{font-size:22px;line-height:1}
+
+/* ── CARDS ── */
+.card{background:white;border-radius:var(--radio);padding:16px;margin-bottom:12px;box-shadow:var(--sombra)}
+.card-title{font-size:13px;font-weight:700;color:var(--gris4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.card-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gris1)}
+.card-row:last-child{border-bottom:none;padding-bottom:0}
+.card-label{font-size:13px;color:var(--gris4)}
+.card-value{font-size:14px;font-weight:600;color:var(--negro);text-align:right;max-width:60%}
+
+/* KPIs */
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.kpi{background:white;border-radius:var(--radio);padding:14px;box-shadow:var(--sombra)}
+.kpi-label{font-size:11px;font-weight:700;color:var(--gris3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.kpi-value{font-size:22px;font-weight:700;color:var(--negro);line-height:1}
+.kpi-sub{font-size:11px;color:var(--gris4);margin-top:3px}
+.kpi.azul .kpi-value{color:var(--azul)}
+.kpi.verde .kpi-value{color:var(--verde)}
+.kpi.rojo .kpi-value{color:var(--rojo)}
+.kpi.naranja .kpi-value{color:var(--naranja)}
+
+/* Badges */
+.bdg{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.bdg-am{background:#fef3c7;color:#92400e}
+.bdg-gr{background:#dcfce7;color:#166534}
+.bdg-rd{background:#fee2e2;color:#991b1b}
+.bdg-bl{background:#dbeafe;color:#1e40af}
+.bdg-pu{background:#f3e8ff;color:#6b21a8}
+.bdg-gy{background:#f3f4f6;color:#4b5563}
+.bdg-tl{background:#ccfbf1;color:#134e4a}
+
+/* Botones */
+.btn{border:none;border-radius:12px;font-size:14px;font-weight:700;padding:14px 20px;cursor:pointer;width:100%;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn:active{opacity:.85}
+.btn:disabled{opacity:.5}
+.btn-azul{background:var(--azul);color:white}
+.btn-verde{background:var(--verde);color:white}
+.btn-rojo{background:var(--rojo);color:white}
+.btn-gris{background:var(--gris2);color:var(--gris5)}
+.btn-sm{padding:10px 16px;font-size:13px;border-radius:10px;width:auto;margin-bottom:0}
+
+/* Items de lista */
+.list-item{background:white;border-radius:var(--radio);padding:14px 16px;margin-bottom:10px;box-shadow:var(--sombra);cursor:pointer;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.list-item:active{background:var(--gris1)}
+.li-main{flex:1}
+.li-title{font-size:15px;font-weight:700;color:var(--negro);margin-bottom:3px}
+.li-sub{font-size:12px;color:var(--gris4);line-height:1.4}
+.li-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.li-arrow{color:var(--gris3);font-size:18px}
+
+/* Formularios */
+.form-group{margin-bottom:14px}
+.form-label{font-size:12px;font-weight:700;color:var(--gris5);margin-bottom:6px;display:block}
+.form-input{width:100%;padding:13px 14px;border:1.5px solid var(--gris2);border-radius:12px;font-size:15px;color:var(--negro);background:white}
+.form-input:focus{outline:none;border-color:var(--azul)}
+.form-select{width:100%;padding:13px 14px;border:1.5px solid var(--gris2);border-radius:12px;font-size:15px;color:var(--negro);background:white;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0l6 8 6-8z' fill='%239ca3af'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+.form-select:focus{outline:none;border-color:var(--azul)}
+.form-textarea{width:100%;padding:13px 14px;border:1.5px solid var(--gris2);border-radius:12px;font-size:15px;color:var(--negro);background:white;resize:none;min-height:80px;font-family:inherit}
+.form-textarea:focus{outline:none;border-color:var(--azul)}
+
+/* Alertas */
+.alr{border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13px;line-height:1.5}
+.alr-info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
+.alr-warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.alr-err{background:#fee2e2;border:1px solid #fca5a5;color:#991b1b}
+.alr-ok{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+
+/* Loading */
+.loading{padding:40px 20px;text-align:center;color:var(--gris3)}
+.spinner{width:32px;height:32px;border:3px solid var(--gris2);border-top-color:var(--azul);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Notificaciones banner */
+.notif-banner{background:white;border-radius:var(--radio);padding:14px 16px;margin-bottom:10px;box-shadow:var(--sombra);border-left:4px solid var(--azul)}
+.notif-banner.urgente{border-left-color:var(--rojo)}
+.notif-banner.info{border-left-color:var(--verde)}
+.nb-title{font-size:14px;font-weight:700;color:var(--negro);margin-bottom:3px}
+.nb-body{font-size:13px;color:var(--gris4);line-height:1.4}
+.nb-time{font-size:11px;color:var(--gris3);margin-top:6px}
+
+/* Toast */
+#toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--negro);color:white;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;transition:all .3s;z-index:9999;white-space:nowrap;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* Seccion vacía */
+.empty{padding:48px 20px;text-align:center;color:var(--gris3)}
+.empty-icon{font-size:48px;margin-bottom:12px}
+.empty-text{font-size:15px;font-weight:600;margin-bottom:6px;color:var(--gris4)}
+.empty-sub{font-size:13px}
+
+/* Checklist */
+.check-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--gris1)}
+.check-item:last-child{border-bottom:none}
+.check-box{width:22px;height:22px;border-radius:6px;border:2px solid var(--gris2);flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.check-box.checked{background:var(--verde);border-color:var(--verde);color:white}
+.check-label{font-size:14px;color:var(--negro);flex:1}
+
+/* Divider */
+.divider{height:1px;background:var(--gris2);margin:16px 0}
+.section-title{font-size:13px;font-weight:700;color:var(--gris4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;margin-top:4px}
+
+/* Tab pills */
+.tab-pills{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px}
+.tab-pills::-webkit-scrollbar{display:none}
+.tab-pill{border:none;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;background:white;color:var(--gris4);box-shadow:var(--sombra)}
+.tab-pill.on{background:var(--azul);color:white}
+
+/* Foto upload */
+.foto-area{border:2px dashed var(--gris2);border-radius:12px;padding:20px;text-align:center;color:var(--gris3);cursor:pointer;margin-bottom:14px}
+.foto-area:active{background:var(--gris1)}
+.foto-preview{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.foto-thumb{width:72px;height:72px;border-radius:10px;object-fit:cover}
+
+/* Progress */
+.progress-bar{height:6px;background:var(--gris2);border-radius:3px;overflow:hidden;margin-top:6px}
+.progress-fill{height:6px;border-radius:3px;background:var(--azul);transition:width .3s}
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="login-logo">
+    <img src="https://drive.google.com/thumbnail?id=1nlldIp2OELLse4ln75Xvl-RgNC_veoxX&sz=w1000">
+  </div>
+  <div class="login-title">CAFÉ BORBONE</div>
+  <div class="login-sub">Operations & Customer Success</div>
+  <div class="login-card">
+    <label class="login-label">Usuario</label>
+    <input type="text" id="lu" class="login-input" placeholder="Tu usuario" autocomplete="username" onkeydown="if(event.key==='Enter')login()">
+    <label class="login-label">Contraseña</label>
+    <input type="password" id="lp" class="login-input" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
+    <button id="lbtn" class="login-btn" onclick="login()">Ingresar</button>
+    <div id="lerr" class="login-err"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <!-- Top bar -->
+  <div class="topbar">
+    <button id="backBtn" class="topbar-back" onclick="goBack()">‹</button>
+    <div class="topbar-title" id="pageTitle">Café Borbone</div>
+    <div class="topbar-notif">
+      <span id="notifBtn" style="font-size:22px;cursor:pointer" onclick="showNotifs()">🔔</span>
+      <div class="notif-dot" id="notifDot"></div>
+    </div>
+    <div class="topbar-avatar" id="userAvatar">?</div>
+  </div>
+
+  <!-- Content -->
+  <div id="content"></div>
+
+  <!-- Bottom nav -->
+  <div class="botnav" id="botnav"></div>
+</div>
+
+<script>
+// ══════════════════════════════
+// GLOBALS
+// ══════════════════════════════
+var G = {user:null, nombre:null, rol:null};
+var _stack = []; // navigation stack
+var _notifs = [];
+
+function C(id){return document.getElementById(id)}
+function H(id,h){var e=C(id);if(e)e.innerHTML=h}
+function fmt(n){return '$'+Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function esc(s){return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
+function load(){return '<div class="loading"><div class="spinner"></div><div>Cargando...</div></div>'}
+function empty(icon,t,s){return '<div class="empty"><div class="empty-icon">'+icon+'</div><div class="empty-text">'+t+'</div>'+(s?'<div class="empty-sub">'+s+'</div>':'')+'</div>'}
+function err(e){return '<div class="alr alr-err">⚠ Error: '+e+'</div>'}
+
+function toast(msg, dur){
+  var t=C('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},dur||2500);
+}
+
+function bdg(t){
+  var m={
+    'Pendiente':'bdg-am','Pendiente Entrega':'bdg-am','Programado':'bdg-bl','Programada':'bdg-bl',
+    'Entregado':'bdg-gr','Entregada':'bdg-gr','Realizado':'bdg-gr','Resuelto':'bdg-gr','Pagada':'bdg-gr',
+    'En Surtido':'bdg-pu','Surtido Completo':'bdg-gr','Surtido Parcial':'bdg-am',
+    'En Entrega':'bdg-tl','Recibida':'bdg-gr','En Tránsito':'bdg-tl','En Aduana':'bdg-am',
+    'Borrador':'bdg-gy','Parcial':'bdg-am','Vencida':'bdg-rd',
+    'No resuelto':'bdg-rd','Parcialmente resuelto':'bdg-am',
+    'Alta':'bdg-rd','Media':'bdg-am','Baja':'bdg-gr',
+  };
+  return '<span class="bdg '+(m[t]||'bdg-gy')+'">'+t+'</span>';
+}
+
+function setTitle(t){
+  C('pageTitle').textContent=t;
+}
+
+function showBack(show){
+  var b=C('backBtn');
+  if(show) b.classList.add('vis'); else b.classList.remove('vis');
+}
+
+function goBack(){
+  if(_stack.length>1){
+    _stack.pop();
+    var prev=_stack[_stack.length-1];
+    _stack.pop();
+    prev();
+  }
+}
+
+function nav(fn){
+  _stack.push(fn);
+  fn();
+}
+
+// ══════════════════════════════
+// LOGIN
+// ══════════════════════════════
+function login(){
+  var u=C('lu').value.trim(), p=C('lp').value;
+  C('lerr').style.display='none';
+  if(!u||!p){C('lerr').textContent='Completa los campos';C('lerr').style.display='block';return}
+  C('lbtn').disabled=true; C('lbtn').textContent='Verificando...';
+  google.script.run
+    .withSuccessHandler(function(r){
+      C('lbtn').disabled=false; C('lbtn').textContent='Ingresar';
+      if(r&&r.valido){
+        G.user=r.usuario; G.nombre=r.nombre; G.rol=r.rol;
+        C('login').style.display='none';
+        C('app').classList.add('visible');
+        C('userAvatar').textContent=(r.nombre||'?')[0].toUpperCase();
+        buildBottomNav();
+        cargarNotifs();
+        showHome();
+      } else {
+        C('lerr').textContent='Usuario o contraseña incorrectos';
+        C('lerr').style.display='block';
+      }
+    })
+    .withFailureHandler(function(e){
+      C('lbtn').disabled=false; C('lbtn').textContent='Ingresar';
+      C('lerr').textContent='Error de conexión'; C('lerr').style.display='block';
+    })
+    .validarUsuario(u,p);
+}
+
+// ══════════════════════════════
+// BOTTOM NAV
+// ══════════════════════════════
+var NAV_ITEMS = {
+  'Administrador': [
+    {id:'home', icon:'🏠', label:'Inicio',    fn:'showHome'},
+    {id:'agenda',icon:'📅',label:'Agenda',   fn:'showAgendaM'},
+    {id:'ops',  icon:'🔧', label:'Servicios', fn:'showServiciosM'},
+    {id:'ent',  icon:'🚚', label:'Entregas',  fn:'showEntregasM'},
+    {id:'inv',  icon:'📦', label:'Bodegas',   fn:'showBodegasM'},
+  ],
+  'Técnico': [
+    {id:'home', icon:'🏠', label:'Inicio',    fn:'showHome'},
+    {id:'agenda',icon:'📅',label:'Agenda',   fn:'showAgendaM'},
+    {id:'ops',  icon:'🔧', label:'Servicios', fn:'showServiciosM'},
+    {id:'seg',  icon:'📞', label:'Seguimientos',fn:'showSeguimientosM'},
+  ],
+  'Entregas': [
+    {id:'home', icon:'🏠', label:'Inicio',    fn:'showHome'},
+    {id:'ent',  icon:'🚚', label:'Entregas',  fn:'showEntregasM'},
+    {id:'prog', icon:'📅', label:'Programar', fn:'showProgramarEntregasM'},
+  ],
+  'Ventas': [
+    {id:'home', icon:'🏠', label:'Inicio',    fn:'showHome'},
+    {id:'ped',  icon:'🛒', label:'Pedidos',   fn:'showPedidosM'},
+    {id:'cob',  icon:'💰', label:'Cobranza',  fn:'showCobranzaM'},
+  ],
+  'Contador': [
+    {id:'home', icon:'🏠', label:'Inicio',    fn:'showHome'},
+  ],
+};
+
+function buildBottomNav(){
+  var items = NAV_ITEMS[G.rol] || NAV_ITEMS['Ventas'];
+  var h='';
+  items.forEach(function(n){
+    h+='<button class="botnav-btn" id="nav_'+n.id+'" onclick="setActiveNav(\''+n.id+'\');'+n.fn+'()">'+
+      '<span class="botnav-icon">'+n.icon+'</span>'+
+      '<span>'+n.label+'</span>'+
+    '</button>';
+  });
+  H('botnav',h);
+}
+
+function setActiveNav(id){
+  document.querySelectorAll('.botnav-btn').forEach(function(b){b.classList.remove('on')});
+  var e=C('nav_'+id); if(e) e.classList.add('on');
+  showBack(false);
+  _stack=[];
+}
+
+// ══════════════════════════════
+// NOTIFICACIONES
+// ══════════════════════════════
+function cargarNotifs(){
+  google.script.run.withSuccessHandler(function(ns){
+    _notifs = ns||[];
+    if(_notifs.length>0) C('notifDot').classList.add('on');
+    else C('notifDot').classList.remove('on');
+  }).withFailureHandler(function(){}).obtenerNotificaciones&&
+  google.script.run.withSuccessHandler(function(ns){
+    _notifs=ns||[];
+    if(_notifs.length) C('notifDot').classList.add('on');
+  }).withFailureHandler(function(){_notifs=[];}).obtenerNotificaciones(G.nombre);
+}
+
+function showNotifs(){
+  setTitle('Notificaciones');
+  showBack(true);
+  nav(function(){
+    if(!_notifs.length){
+      H('content', empty('🔔','Sin notificaciones nuevas','Estás al día'));
+      return;
+    }
+    var h='';
+    _notifs.forEach(function(n){
+      h+='<div class="notif-banner '+(n.tipo==='urgente'?'urgente':n.tipo==='info'?'info':'')+'">' +
+        '<div class="nb-title">'+(n.titulo||'Aviso')+'</div>' +
+        '<div class="nb-body">'+(n.mensaje||'')+'</div>' +
+        '<div class="nb-time">'+(n.fecha||'')+' · '+(n.de||'Sistema')+'</div>' +
+      '</div>';
+    });
+    H('content','<div class="section-title">Mensajes recientes</div>'+h);
+  });
+}
+
+// ══════════════════════════════
+// HOME
+// ══════════════════════════════
+function showHome(){
+  setActiveNav('home');
+  setTitle('Café Borbone');
+  showBack(false);
+  _stack=[];
+
+  var saludos = {
+    'Administrador': '¡Hola, '+G.nombre+'! 👋',
+    'Técnico': '¡Buenos días, '+G.nombre+'! 🔧',
+    'Entregas': '¡Listo para entregar, '+G.nombre+'! 🚚',
+    'Ventas': '¡A vender, '+G.nombre+'! 🛒',
+    'Contador': '¡Hola, '+G.nombre+'! 📒',
+  };
+
+  H('content','<div class="loading"><div class="spinner"></div></div>');
+
+  if(G.rol==='Técnico') loadHomeTecnico();
+  else if(G.rol==='Entregas') loadHomeEntregas();
+  else if(G.rol==='Ventas') loadHomeVentas();
+  else loadHomeAdmin();
+}
+
+function loadHomeTecnico(){
+  google.script.run.withSuccessHandler(function(datos){
+    var agenda = (datos&&datos.agenda)||[];
+    var hoy = agenda.filter(function(c){return c.estado!=='Realizado';});
+    var h =
+      '<div class="section-title">Tu agenda de hoy</div>'+
+      (hoy.length===0 ? empty('✅','Sin citas pendientes hoy','¡Buen trabajo!') : '')+
+      hoy.map(function(c){
+        return '<div class="list-item" onclick="iniciarServicioM(\''+esc(c.cliente)+'\',\''+esc(c.fecha)+'\',\''+esc(c.hora)+'\',\''+esc(c.tecnico)+'\')">'+
+          '<div class="li-main">'+
+            '<div class="li-title">'+c.cliente+'</div>'+
+            '<div class="li-sub">'+c.hora+' · '+c.tipo+(c.sucursal?' · '+c.sucursal:'')+'</div>'+
+          '</div>'+
+          '<div class="li-right">'+bdg(c.estado)+'<span class="li-arrow">›</span></div>'+
+        '</div>';
+      }).join('')+
+      '<div class="divider"></div>'+
+      '<button class="btn btn-azul" onclick="showAgendaM()">📅 Ver agenda completa</button>'+
+      '<button class="btn btn-gris" onclick="showServiciosM()">📋 Historial de servicios</button>';
+    H('content',h);
+  }).withFailureHandler(function(e){H('content',err(e));}).obtenerAgenda();
+}
+
+function loadHomeEntregas(){
+  google.script.run.withSuccessHandler(function(ents){
+    var pend = (ents||[]).filter(function(e){return e.estatus==='Pendiente Entrega'||e.estatus==='Programada';});
+    var h =
+      '<div class="kpi-grid">'+
+        '<div class="kpi naranja"><div class="kpi-label">Pendientes</div><div class="kpi-value">'+pend.filter(function(e){return e.estatus==='Pendiente Entrega';}).length+'</div></div>'+
+        '<div class="kpi azul"><div class="kpi-label">Programadas</div><div class="kpi-value">'+pend.filter(function(e){return e.estatus==='Programada';}).length+'</div></div>'+
+      '</div>'+
+      '<div class="section-title">Entregas de hoy</div>'+
+      (pend.length===0?empty('✅','Sin entregas pendientes','¡Todo entregado!'):'');
+    pend.slice(0,5).forEach(function(e){
+      h+='<div class="list-item" onclick="verEntregaM(\''+esc(e.folio)+'\')">'+
+        '<div class="li-main">'+
+          '<div class="li-title">'+e.cliente+'</div>'+
+          '<div class="li-sub">'+e.folio+(e.sucursal?' · '+e.sucursal:'')+(e.fechaProgramada?' · '+e.fechaProgramada:'')+'</div>'+
+        '</div>'+
+        '<div class="li-right">'+bdg(e.estatus)+'<span class="li-arrow">›</span></div>'+
+      '</div>';
+    });
+    h+='<button class="btn btn-azul" onclick="showEntregasM()" style="margin-top:8px">🚚 Ver todas las entregas</button>';
+    H('content',h);
+  }).withFailureHandler(function(e){H('content',err(e));}).obtenerEntregas();
+}
+
+function loadHomeVentas(){
+  google.script.run.withSuccessHandler(function(peds){
+    var recientes = (peds||[]).slice(0,5);
+    var h =
+      '<button class="btn btn-verde" onclick="showNuevoPedidoM()">➕ Nuevo Pedido</button>'+
+      '<div class="divider"></div>'+
+      '<div class="section-title">Pedidos recientes</div>'+
+      (recientes.length===0?empty('🛒','Sin pedidos recientes',''):'')+
+      recientes.map(function(p){
+        return '<div class="list-item" onclick="">'+
+          '<div class="li-main">'+
+            '<div class="li-title">'+p.cliente+'</div>'+
+            '<div class="li-sub">'+p.folio+' · '+p.fecha+'</div>'+
+          '</div>'+
+          '<div class="li-right">'+bdg(p.estatus||'Pendiente')+'</div>'+
+        '</div>';
+      }).join('');
+    H('content',h);
+  }).withFailureHandler(function(e){H('content',err(e));}).obtenerPedidos();
+}
+
+function loadHomeAdmin(){
+  var h =
+    '<div class="section-title">Acceso rápido</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">'+
+      accionCard('📅','Agenda',      'showAgendaM()')+
+      accionCard('🔧','Servicios',   'showServiciosM()')+
+      accionCard('🚚','Entregas',    'showEntregasM()')+
+      accionCard('📦','Bodegas',     'showBodegasM()')+
+      accionCard('🛒','Pedidos',     'showPedidosM()')+
+      accionCard('💰','Cobranza',    'showCobranzaM()')+
+    '</div>';
+  H('content',h);
+}
+
+function accionCard(icon, label, fn){
+  return '<div style="background:white;border-radius:14px;padding:18px;text-align:center;cursor:pointer;box-shadow:var(--sombra)" onclick="'+fn+'">'+
+    '<div style="font-size:28px;margin-bottom:6px">'+icon+'</div>'+
+    '<div style="font-size:13px;font-weight:700;color:var(--negro)">'+label+'</div>'+
+  '</div>';
+}
+
+// ══════════════════════════════
+// AGENDA
+// ══════════════════════════════
+function showAgendaM(){
+  setActiveNav('agenda');
+  setTitle('Agenda');
+  showBack(false);
+  H('content',load());
+  google.script.run.withSuccessHandler(function(datos){
+    var agenda=(datos&&datos.agenda)||[];
+    var h='<button class="btn btn-azul" onclick="showNuevaCitaM()" style="margin-bottom:16px">➕ Nueva cita</button>';
+    if(!agenda.length){h+=empty('📅','Sin citas','Agenda limpia');H('content',h);return;}
+    var dias={};
+    agenda.forEach(function(c){dias[c.fecha]=(dias[c.fecha]||[]).concat(c);});
+    Object.keys(dias).sort().forEach(function(fecha){
+      h+='<div class="section-title">'+fecha+'</div>';
+      dias[fecha].forEach(function(c){
+        h+='<div class="list-item" onclick="verCitaM(\''+esc(JSON.stringify(c).replace(/'/g,"&#39;"))+'\')" >'+
+          '<div class="li-main">'+
+            '<div class="li-title">'+c.cliente+'</div>'+
+            '<div class="li-sub">'+c.hora+' · '+c.tecnico+' · '+c.tipo+'</div>'+
+          '</div>'+
+          '<div class="li-right">'+bdg(c.estado)+'<span class="li-arrow">›</span></div>'+
+        '</div>';
+      });
+    });
+    H('content',h);
+  }).withFailureHandler(function(e){H('content',err(e));}).obtenerAgenda();
+}
+
+function verCitaM(jsonStr){
+  var c;
+  try{c=JSON.parse(jsonStr);}catch(e){return;}
+  setTitle(c.cliente);
+  showBack(true);
+  nav(function(){
+    var h=
+      '<div class="card">'+
+        '<div class="card-row"><span class="card-label">Cliente</span><span class="card-value">'+c.cliente+'</span></div>'+
+        '<div class="card-row"><span class="card-label">Fecha</span><span class="card-value">'+c.fecha+'</span></div>'+
+        '<div class="card-row"><span class="card-label">Hora</span><span class="card-value">'+c.hora+'</span></div>'+
+        '<div class="card-row"><span class="card-label">Técnico</span><span class="card-value">'+c.tecnico+'</span></div>'+
+        '<div class="card-row"><span class="card-label">Tipo</span><span class="card-value">'+c.tipo+'</span></div>'+
+        '<div class="card-row"><span class="card-label">Estado</span><span class="card-value">'+bdg(c.estado)+'</span></div>'+
+        (c.sucursal?'<div class="card-row"><span class="card-label">Sucursal</span><span class="card-value">'+c.sucursal+'</span></div>':'')+
+      '</div>';
+    if(c.estado!=='Realizado'){
+      h+='<button class="btn btn-verde" onclick="iniciarServicioM(\''+esc(c.cliente)+'\',\''+esc(c.fecha)+'\',\''+esc(c.hora)+'\',\''+esc(c.tecnico)+'\')">🔧 Iniciar Servicio</button>';
+    }
+    H('content',h);
+  });
+}
+
+function showNuevaCitaM(){
+  setTitle('Nueva Cita');
+  showBack(true);
+  nav(function(){
+    H('content',load());
+    google.script.run.withSuccessHandler(function(clis){
+      google.script.run.withSuccessHandler(function(tecs){
+        var h=
+          '<div class="form-group"><label class="form-label">Cliente *</label>'+
+            '<select id="ncCli" class="form-select"><option value="">Selecciona...</option>'+
+            clis.map(function(c){return '<option>'+c+'</option>';}).join('')+
+            '</select></div>'+
+          '<div class="form-group"><label class="form-label">Fecha *</label>'+
+            '<input type="date" id="ncFec" class="form-input"></div>'+
+          '<div class="form-group"><label class="form-label">Hora</label>'+
+            '<input type="time" id="ncHor" class="form-input"></div>'+
+          '<div class="form-group"><label class="form-label">Técnico *</label>'+
+            '<select id="ncTec" class="form-select"><option value="">Selecciona...</option>'+
+            tecs.map(function(t){return '<option'+(t===G.nombre?' selected':'')+'>'+t+'</option>';}).join('')+
+            '</select></div>'+
+          '<div class="form-group"><label class="form-label">Tipo</label>'+
+            '<select id="ncTip" class="form-select"><option>Preventivo</option><option>Correctivo</option><option>Instalación</option><option>Capacitación</option></select></div>'+
+          '<div class="form-group"><label class="form-label">Observaciones</label>'+
+            '<textarea id="ncObs" class="form-textarea" placeholder="Notas adicionales..."></textarea></div>'+
+          '<button class="btn btn-verde" onclick="guardarCitaM()">💾 Guardar Cita</button>'+
+          '<button class="btn btn-gris" onclick="goBack()">Cancelar</button>';
+        H('content',h);
+        if(G.rol==='Técnico'){var s=C('ncTec');if(s){s.value=G.nombre;s.disabled=true;}}
+      }).obtenerTecnicos();
+    }).obtenerClientes();
+  });
+}
+
+function guardarCitaM(){
+  var cli=C('ncCli').value, fec=C('ncFec').value, tec=C('ncTec').value;
+  if(!cli||!fec||!tec){toast('⚠ Completa los campos obligatorios');return;}
+  var btn=document.querySelector('#content .btn-verde');
+  if(btn){btn.disabled=true;btn.textContent='Guardando...';}
+  google.script.run
+    .withSuccessHandler(function(){toast('✅ Cita creada');goBack();showAgendaM();})
+    .withFailureHandler(function(e){toast('Error: '+e);if(btn){btn.disabled=false;btn.textContent='💾 Guardar Cita';}})
+    .guardarCita({cliente:cli,fecha:fec,hora:C('ncHor').value,tecnico:tec,tipo:C('ncTip').value,observaciones:C('ncObs').value,sucursal:'',folioSeguimiento:''});
+}
+
+// ══════════════════════════════
+// SERVICIOS TÉCNICOS
+// ══════════════════════════════
+function showServiciosM(){
+  setActiveNav('ops');
+  setTitle('Servicios');
+  showBack(false);
+  H('content',load());
+  google.script.run.withSuccessHandler(function(servs){
+    var h='<div class="tab-pills">'+
+      '<button class="tab-pill on" onclick="filtServM(this,\'\')">Todos</button>'+
+      '<button class="tab-pill" onclick="filtServM(this,\'Resuelto\')">✅ Resueltos</button>'+
+      '<button class="tab-pill" onclick="filtServM(this,\'No resuelto\')">❌ Sin resolver</button>'+
+    '</div>';
+    if(!servs.length){h+=empty('🔧','Sin servicios registrados','');H('content',h);return;}
+    h+='<div id="listaServs">';
+    servs.forEach(function(s){
+      h+='<div class="list-item" data-res="'+(s.resultado||'')+'" onclick="verServicioM(\''+esc(s.folio)+'\')">'+
+        '<div class="li-main">'+
+          '<div class="li-title">'+s.cliente+'</div>'+
+          '<div class="li-sub">'+s.folio+' · '+s.fecha+' · '+s.tecnico+'</div>'+
+        '</div>'+
+        '<div class="li-right">'+(s.resultado?bdg(s.resultado):bdg('Pendiente'))+'<span class="li-arrow">›</span></div>'+
+      '</div>';
+    });
+    h+='</div>';
+    H('content',h);
+  }).withFailureHandler(function(e){H('content',err(e));}).obtenerHistoricoServicios();
+}
+
+function filtServM(btn, res){
+  document.querySelectorAll('.tab-pill').forEach(function(b){b.classList.remove('on')});
+  btn.classList.add('on');
+  document.querySelectorAll('#listaServs .list-item').forEach(function(el){
+    el.style.display=(!res||el.dataset.res===res)?'':'none';
+  });
+}
+
+function verServicioM(folio){
+  setTitle('Servicio '+folio);
+  showBack(true);
+  H('content',load());
+  nav(function(){
+    H('content',load());
+    google.script.run.withSuccessHandler(function(s){
+      if(!s){H('content',err('No encontrado'));return;}
+      var h=
+        '<div class="card">'+
+          '<div class="card-row"><span class="card-label">Cliente</span><span class="card-value">'+s.cliente+'</span></div>'+
+          '<div class="card-row"><span class="card-label">Técnico</span><span class="card-value">'+s.tecnico+'</span></div>'+
+          '<div class="card-row"><span class="card-label">Resultado</span><span class="card-value">'+(s.resultado?bdg(s.resultado):'-')+'</span></div>'+
+          '<div class="card-row"><span class="card-label">Recibe</span><span class="card-value">'+(s.recibe||'-')+'</span></div>'+
+        '</div>'+
+        '<div class="card"><div class="card-title">🔍 Diagnóstico</div><div style="font-size:14px;line-height:1.6;color:var(--gris5)">'+(s.diagnostico||'Sin diagnóstico')+'</div></div>'+
+        '<div class="card"><div class="card-title">🛠 Actividades</div><div style="font-size:14px;line-height:1.8;color:var(--gris5)">'+(s.actividades||'Sin registrar')+'</div></div>'+
+        (s.recomendacion&&s.recomendacion!=='Sin observaciones'?'<div class="alr alr-warn">💡 <b>Recomendación:</b> '+s.recomendacion+'</div>':'')+
+        (s.visita==='Si'?'<div class="alr alr-err">⚠ Requiere visita adicional</div>':'')+
+        (s.pdf&&s.pdf.startsWith('http')?'<button class="btn btn-gris" onclick="window.open(\''+s.pdf+'\',\'_blank\')">📄 Ver PDF</button>':'');
+      H('content',h);
+    }).withFailureHandler(function(e){H('content',err(e));}).obtenerDetalleServicio(folio);
+  });
+}
+
+// ── REGISTRAR SERVICIO ──
+function iniciarServicioM(cli, fecha, hora, tec){
+  setTitle('Reporte de Servicio');
+  showBack(true);
+  nav(function(){
+    var h=
+      '<div class="alr alr-info">'+
+        '<b>'+cli+'</b><br>'+fecha+' '+hora+' · '+tec+
+      '</div>'+
+      '<div class="form-group"><label class="form-label">🧹 ¿Se realiza limpieza diaria?</label>'+
+        '<div style="display:flex;gap:12px">'+
+          '<label style="display:flex;align-items:center;gap:6px;font-size:15px;cursor:pointer"><input type="radio" name="lD" value="Sí"> Sí</label>'+
+          '<label style="display:flex;align-items:center;gap:6px;font-size:15px;cursor:pointer"><input type="radio" name="lD" value="No"> No</label>'+
+        '</div></div>'+
+      '<div class="form-group"><label class="form-label">🔍 Diagnóstico</label>'+
+        '<textarea id="srvDiag" class="form-textarea" placeholder="Describe el problema detectado..."></textarea></div>'+
+      '<div class="form-group"><label class="form-label">🛠 Actividades realizadas</label>'+
+        '<div id="actList">'+
+          checkItem('aL','Limpieza general')+
+          checkItem('aF','Cambio de filtro')+
+          checkItem('aB','Cambio de bomba')+
+          checkItem('aCl','Calibración')+
+          checkItem('aD','Descalcificación')+
+        '</div></div>'+
+      '<div class="form-group"><label class="form-label">✅ Resultado</label>'+
+        '<select id="srvRes" class="form-select"><option value="">Selecciona...</option><option>Resuelto</option><option>Parcialmente resuelto</option><option>No resuelto</option></select></div>'+
+      '<div class="form-group"><label class="form-label">📅 ¿Requiere visita adicional?</label>'+
+        '<div style="display:flex;gap:12px">'+
+          '<label style="display:flex;align-items:center;gap:6px;font-size:15px;cursor:pointer"><input type="radio" name="vis" value="Si"> Sí</label>'+
+          '<label style="display:flex;align-items:center;gap:6px;font-size:15px;cursor:pointer"><input type="radio" name="vis" value="No"> No</label>'+
+        '</div></div>'+
+      '<div class="form-group"><label class="form-label">💡 Recomendación</label>'+
+        '<select id="srvReco" class="form-select"><option>Sin observaciones</option><option>Mantenimiento preventivo</option><option>Cambio de refacciones</option><option>Seguimiento técnico</option><option>Sustitución de equipo</option></select></div>'+
+      '<div class="form-group"><label class="form-label">👤 Quién recibe</label>'+
+        '<input type="text" id="srvRec" class="form-input" placeholder="Nombre de quien recibe"></div>'+
+      '<div class="form-group"><label class="form-label">📸 Evidencias (máx. 5)</label>'+
+        '<div class="foto-area" onclick="C(\'fotoInput\').click()">'+
+          '<div style="font-size:32px">📷</div>'+
+          '<div style="font-size:13px;margin-top:6px">Toca para agregar fotos</div>'+
+          '<div class="foto-preview" id="fotoPreview"></div>'+
+        '</div>'+
+        '<input type="file" id="fotoInput" accept="image/*" multiple style="display:none" onchange="previewFotos(this)"></div>'+
+      '<button id="btnSrv" class="btn btn-verde" onclick="guardarServicioM(\''+esc(cli)+'\',\''+esc(fecha)+'\',\''+esc(hora)+'\',\''+esc(tec)+'\')">💾 Guardar Servicio</button>'+
+      '<button class="btn btn-gris" onclick="goBack()">Cancelar</button>';
+    H('content',h);
+    // Add toggle behavior to checkboxes
+    document.querySelectorAll('.check-box').forEach(function(box){
+      box.addEventListener('click',function(){this.classList.toggle('checked');this.textContent=this.classList.contains('checked')?'✓':'';});
+    });
+  });
+}
+
+function checkItem(id, label){
+  return '<div class="check-item">'+
+    '<div class="check-box" id="'+id+'"></div>'+
+    '<label class="check-label" onclick="C(\''+id+'\').click()">'+label+'</label>'+
+  '</div>';
+}
+
+function previewFotos(input){
+  var prev=C('fotoPreview');
+  prev.innerHTML='';
+  Array.from(input.files).slice(0,5).forEach(function(f){
+    var r=new FileReader();
+    r.onload=function(ev){
+      var img=document.createElement('img');
+      img.src=ev.target.result;
+      img.className='foto-thumb';
+      prev.appendChild(img);
+    };
+    r.readAsDataURL(f);
+  });
+}
+
+function guardarServicioM(cli,fecha,hora,tec){
+  var btn=C('btnSrv');btn.disabled=true;btn.textContent='⏳ Guardando...';
+  var acts=[];
+  ['aL','aF','aB','aCl','aD'].forEach(function(id){
+    var el=C(id);
+    if(el&&el.classList.contains('checked')){
+      var labels={'aL':'Limpieza general','aF':'Cambio de filtro','aB':'Cambio de bomba','aCl':'Calibración','aD':'Descalcificación'};
+      acts.push(labels[id]);
+    }
+  });
+  var datos={
+    fecha:fecha,hora:hora,cliente:cli,tecnico:tec,
+    diagnostico:C('srvDiag').value,
+    actividades:acts.join('<br>'),
+    limpiezaDiaria:document.querySelector('input[name="lD"]:checked')?.value||'',
+    resultado:C('srvRes').value,
+    visitaAdicional:document.querySelector('input[name="vis"]:checked')?.value||'',
+    recomendacion:C('srvReco').value,
+    recibe:C('srvRec').value,
+    totalFotos:0
+  };
+  var files=Array.from(C('fotoInput').files||[]).slice(0,5);
+  function enviar(){
+    google.script.run
+      .withSuccessHandler(function(){toast('✅ Servicio guardado');goBack();showServiciosM();})
+      .withFailureHandler(function(e){btn.disabled=false;btn.textContent='💾 Guardar Servicio';toast('Error: '+e);})
+      .guardarServicio(datos);
+  }
+  if(files.length){
+    datos.evidencias=[];datos.totalFotos=files.length;var proc=0;
+    files.forEach(function(f){var r=new FileReader();r.onload=function(ev){datos.evidencias.push(ev.target.result);proc++;if(proc===files.length)enviar();};r.readAsDataURL(f);});
+  } else enviar();
+}
+
+// ══════════════════════════════
+// SEGUIMIENTOS
+// ══════════════════════════════
+function showSeguimientosM(){
+  setActiveNav('seg');
+  setTitle('Seguimientos');
+  showBack(false);
+  H('content',load());
+  google.script.run.withSuccessHandler(function(segs){
+    var h='<button class="btn btn-azul" onclick="showNuevoSegM()" style="margin-bottom:14px">➕ Nuevo Seguimiento</button>';
+    if(!segs.length){h+=empty('📞','Sin seguimientos','');H('content',h);return;}
+    segs.forEach(function(s){
+      var pri=s.prioridad==='Alta'?'bdg-rd':s.prioridad==='Media'?'bdg-am':'bdg-gr';
+      h+='<div class="list-item">'+
+        '<div class="li-main">'+
+          '<div class="li-title">'+s.cliente+'</div>'+
+          '<div class="li-sub">'+s.tipo+' · '+s.motivo+(s.fechaSeguimiento?' · '+s.fechaSeguimiento:'')+'</div>'+
+        '</div>'+
+        '<div class="li-right">'+
+          '<span class="bdg '+pri+'">'+s.prioridad+'</span>'+
+          bdg(s.estado||'Pendiente')+
+        '</div>'+
+      '</div>';
+    });
+    H('content',h);
+  }).withFailureHandler(function(e){H('content',err(e));}).obtenerSeguimientos();
+}
+
+function showNuevoSegM(){
+  setTitle('Nuevo Seguimiento');
+  showBack(true);
+  nav(function(){
+    H('content',load());
+    google.script.run.withSuccessHandler(function(clis){
+      var h=
+        '<div class="form-group"><label class="form-label">Cliente *</label>'+
+          '<select id="sgCli" class="form-select"><option value="">Selecciona...</option>'+clis.map(function(c){return '<option>'+c+'</option>';}).join('')+'</select></div>'+
+        '<div class="form-group"><label class="form-label">Tipo</label>'+
+          '<select id="sgTip" class="form-select"><option>Preventivo</option><option>Correctivo</option></select></div>'+
+        '<div class="form-group"><label class="form-label">Motivo</label>'+
+          '<select id="sgMot" class="form-select"><option>Seguimiento técnico</option><option>Cambio de refacciones</option><option>Mantenimiento preventivo</option><option>Llamada comercial</option></select></div>'+
+        '<div class="form-group"><label class="form-label">Prioridad</label>'+
+          '<select id="sgPri" class="form-select"><option>Baja</option><option>Media</option><option>Alta</option></select></div>'+
+        '<div class="form-group"><label class="form-label">Fecha programada</label>'+
+          '<input type="date" id="sgFec" class="form-input"></div>'+
+        '<div class="form-group"><label class="form-label">Observaciones</label>'+
+          '<textarea id="sgObs" class="form-textarea"></textarea></div>'+
+        '<button class="btn btn-verde" onclick="guardarSegM()">💾 Guardar</button>'+
+        '<button class="btn btn-gris" onclick="goBack()">Cancelar</button>';
+      H('content',h);
+    }).obtenerClientes();
+  });
+}
+
+function guardarSegM(){
+  var cli=C('sgCli').value;
+  if(!cli){toast('⚠ Selecciona un cliente');return;}
+  var btn=document.querySelector('#content .btn-verde');
+  if(btn){btn.disabled=true;btn.textContent='Guardando...';}
+  google.script.run
+    .withSuccessHandler(function(){toast('✅ Seguimiento creado');goBack();showSeguimientosM();})
+    .withFailureHandler(function(e){toast('Error: '+e);if(btn){btn.disabled=false;btn.textContent='💾 Guardar';}})
+    .guardarSeguimiento({cliente:cli,tipo:C('sgTip').value,motivo:C('sgMot').value,prioridad:C('sgPri').value,fechaSeguimiento:C('sgFec').value,responsable:G.nombre,observaciones:C('sgObs').value});
+}
+
+// ══════════════════════════════
+// ENTREGAS
+// ══════════════════════════════
+function showEntregasM(){
+  setActiveNav('ent');
+  setTitle('Entregas');
+  showBack(false);
+  H('content',load());
+  google.script.run.withSuccessHandler(function(ents){
+    var h='<div class="tab-pills">'+
+      '<button class="tab-pill on" onclick="filtEntM(this,\'\')">Todas</button>'+
+      '<button class="tab-pill" onclick="filtEntM(this,\'Pendiente Entrega\')">⏳ Pendientes</button>'+
+      '<button class="tab-pill" onclick="filtEntM(this,\'Programada\')">📅 Programadas</button>'+
+      '<button class="tab-pill" onclick="filtEntM(this,\'Entregada\')">✅ Entregadas</button>'+
+    '</div><div id="listaEnts">';
+    if(!ents.length){h+=empty('🚚','Sin entregas','');H('content',h+'</div>');return;}
+    ents.forEach(function(e){
+      h+='<div class="list-item" data-est="'+(e.estatus||'')+'" onclick="verEntregaM(\''+esc(e.folio)+'\')">'+
+        '<div class="li-main">'+
+          '<div class="li-title">'+e.cliente+'</div>'+
+          '<div class="li-sub">'+e.folio+(e.sucursal?' · '+e.sucursal:'')+(e.fechaProgramada?' · '+e.fechaProgramada:'')+'</div>'+
+        '</div>'+
+        '<div class="li-right">'+bdg(e.estatus||'Pendiente Entrega')+'<span class="li-arrow">›</span></div>'+
+      '</div>';
+    });
+    H('content',h+'</div>');
+  }).withFailureHandler(function(e){H('content',err(e));}).obtenerEntregas();
+}
+
+function filtEntM(btn,est){
+  document.querySelectorAll('.tab-pill').forEach(function(b){b.classList.remove('on')});
+  btn.classList.add('on');
+  document.querySelectorAll('#listaEnts .list-item').forEach(function(el){
+    el.style.display=(!est||el.dataset.est===est)?'':'none';
+  });
+}
+
+function verEntregaM(folio){
+  setTitle('Entrega '+folio);
+  showBack(true);
+  nav(function(){
+    H('content',load());
+    google.script.run.withSuccessHandler(function(ents){
+      var e=(ents||[]).find(function(x){return x.folio===folio;})||{};
+      var h=
+        '<div class="card">'+
+          '<div class="card-row"><span class="card-label">Cliente</span><span class="card-value">'+(e.cliente||'-')+'</span></div>'+
+          '<div class="card-row"><span class="card-label">Pedido</span><span class="card-value">'+(e.pedido||'-')+'</span></div>'+
+          '<div class="card-row"><span class="card-label">Sucursal</span><span class="card-value">'+(e.sucursal||'Principal')+'</span></div>'+
+          '<div class="card-row"><span class="card-label">Programada</span><span class="card-value">'+(e.fechaProgramada||'-')+'</span></div>'+
+          '<div class="card-row"><span class="card-label">Estatus</span><span class="card-value">'+bdg(e.estatus||'Pendiente Entrega')+'</span></div>'+
+        '</div>';
+      if(e.estatus==='Pendiente Entrega'){
+        h+='<button class="btn btn-azul" onclick="programarEntregaM(\''+esc(folio)+'\')">📅 Programar Entrega</button>';
+      }
+      if(e.estatus==='Programada'){
+        h+='<button class="btn btn-verde" onclick="confirmarEntregaM(\''+esc(folio)+'\')">✅ Confirmar Entrega</button>';
+      }
+      H('content',h);
+    }).withFailureHandler(function(ex){H('content',err(ex));}).obtenerEntregas();
+  });
+}
+
+function programarEntregaM(folio){
+  setTitle('Programar Entrega');
+  showBack(true);
+  nav(function(){
+    var ahora=new Date();
+    var h=
+      '<div class="form-group"><label class="form-label">Fecha de entrega *</label>'+
+        '<input type="date" id="peD" class="form-input" value="'+ahora.toISOString().split('T')[0]+'"></div>'+
+      '<div class="form-group"><label class="form-label">Hora</label>'+
+        '<input type="time" id="peH" class="form-input"></div>'+
+      '<div class="form-group"><label class="form-label">Repartidor</label>'+
+        '<input type="text" id="peR" class="form-input" placeholder="Nombre del repartidor" value="'+G.nombre+'"></div>'+
+      '<div class="form-group"><label class="form-label">Observaciones</label>'+
+        '<textarea id="peO" class="form-textarea"></textarea></div>'+
+      '<button id="btnPE" class="btn btn-azul" onclick="guardarProgEntregaM(\''+esc(folio)+'\')">📅 Programar</button>'+
+      '<button class="btn btn-gris" onclick="goBack()">Cancelar</button>';
+    H('content',h);
+  });
+}
+
+function guardarProgEntregaM(folio){
+  var fecha=C('peD').value;
+  if(!fecha){toast('⚠ Ingresa la fecha');return;}
+  var btn=C('btnPE');btn.disabled=true;btn.textContent='Guardando...';
+  google.script.run
+    .withSuccessHandler(function(r){if(r.status==='OK'){toast('✅ Entrega programada');goBack();showEntregasM();}else toast('Error: '+r.status);})
+    .withFailureHandler(function(e){btn.disabled=false;btn.textContent='📅 Programar';toast('Error: '+e);})
+    .programarEntrega(folio,fecha,C('peH').value,C('peR').value,C('peO').value,G.nombre);
+}
+
+function confirmarEntregaM(folio){
+  setTitle('Confirmar Entrega');
+  showBack(true);
+  nav(function(){
+    var ahora=new Date();
+    var h=
+      '<div class="form-group"><label class="form-label">¿Quién recibe? *</label>'+
+        '<input type="text" id="reR" class="form-input" placeholder="Nombre de quien recibe"></div>'+
+      '<div class="form-group"><label class="form-label">Fecha real</label>'+
+        '<input type="date" id="reD" class="form-input" value="'+ahora.toISOString().split('T')[0]+'"></div>'+
+      '<div class="form-group"><label class="form-label">Hora</label>'+
+        '<input type="time" id="reH" class="form-input" value="'+ahora.toTimeString().substring(0,5)+'"></div>'+
+      '<div class="form-group"><label class="form-label">Observaciones</label>'+
+        '<textarea id="reO" class="form-textarea"></textarea></div>'+
+      '<button id="btnRE" class="btn btn-verde" onclick="guardarConfEntregaM(\''+esc(folio)+'\')">✅ Confirmar Entregado</button>'+
+      '<button class="btn btn-gris" onclick="goBack()">Cancelar</button>';
+    H('content',h);
+  });
+}
+
+function guardarConfEntregaM(folio){
+  var recibe=C('reR').value;
+  if(!recibe){toast('⚠ Ingresa quién recibe');return;}
+  var btn=C('btnRE');btn.disabled=true;btn.textContent='Confirmando...';
+  google.script.run
+    .withSuccessHandler(function(r){if(r.status==='OK'){toast('✅ Entrega confirmada');goBack();showEntregasM();}else toast('Error: '+r.status);})
+    .withFailureHandler(function(e){btn.disabled=false;btn.textContent='✅ Confirmar';toast('Error: '+e);})
+    .confirmarEntrega(folio,recibe,C('reD').value,C('reH').value,C('reO').value,G.nombre);
+}
+
+function showProgramarEntregasM(){
+  setActiveNav('prog');
+  setTitle('Programar Entregas');
+  showBack(false);
+  H('content',load());
+  google.script.run.withSuccessHandler(function(ents){
+    var pend=(ents||[]).filter(function(e){return e.estatus==='Pendiente Entrega';});
+    var h='<div class="section-title">'+pend.length+' pendientes de programar</div>';
+    if(!pend.length){h+=empty('📅','Todo programado','¡Al día!');H('content',h);return;}
+    pend.forEach(function(e){
+      h+='<div class="list-item" onclick="programarEntregaM(\''+esc(e.folio)+'\')">'+
+        '<div class="li-main">'+
+          '<div class="li-title">'+e.cliente+'</div>'+
+          '<div class="li-sub">'+e.folio+(e.sucursal?' · '+e.sucursal:'')+'</div>'+
+        '</div>'+
+        '<div class="li-right"><span class="btn btn-azul btn-sm">📅 Programar</span></div>'+
+      '</div>';
+    });
+    H('content',h);
+  }).withFailureHandler(function(e){H('content',err(e));}).obtenerEntregas();
+}
+
+// ══════════════════════════════
+// BODEGAS Y TRASPASOS
+// ══════════════════════════════
+function showBodegasM(){
+  setActiveNav('inv');
+  setTitle('Bodegas');
+  showBack(false);
+  H('content',load());
+  var fiscal=[],almacen=[],f=false,a=false;
+  function render(){
+    if(!f||!a)return;
+    var h=
+      '<div class="tab-pills">'+
+        '<button class="tab-pill on" id="tabFis" onclick="switchBodegaM(this,\'fis\')">🏛 Fiscal</button>'+
+        '<button class="tab-pill" id="tabAlm" onclick="switchBodegaM(this,\'alm\')">🏭 Almacén</button>'+
+      '</div>'+
+      '<button class="btn btn-azul" onclick="showTraspasoM()" style="margin-bottom:14px">🔄 Nuevo Traspaso</button>'+
+      '<div id="bodFis">';
+    var alertaF=fiscal.filter(function(i){return i.alerta;});
+    if(alertaF.length) h+='<div class="alr alr-err">⚠ '+alertaF.length+' producto(s) bajo mínimo</div>';
+    fiscal.forEach(function(i){
+      h+='<div class="card" style="padding:12px 14px;margin-bottom:8px">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center">'+
+          '<div style="font-size:14px;font-weight:700;color:var(--negro)">'+i.producto+'</div>'+
+          '<div style="font-size:22px;font-weight:700;color:'+(i.alerta?'var(--rojo)':'var(--azul)')+'">'+i.existencia+'</div>'+
+        '</div>'+
+        '<div style="font-size:12px;color:var(--gris4);margin-top:2px">Mínimo: '+i.stockMinimo+(i.ultimaEntrada?' · Última entrada: '+i.ultimaEntrada:'')+'</div>'+
+        '<div class="progress-bar"><div class="progress-fill" style="width:'+Math.min(100,Math.round(i.existencia/(i.stockMinimo||1)*50))+'%;background:'+(i.alerta?'var(--rojo)':'var(--verde)')+'"></div></div>'+
+      '</div>';
+    });
+    h+='</div><div id="bodAlm" style="display:none">';
+    var alertaA=almacen.filter(function(i){return i.alerta;});
+    if(alertaA.length) h+='<div class="alr alr-err">⚠ '+alertaA.length+' producto(s) bajo mínimo</div>';
+    almacen.forEach(function(i){
+      h+='<div class="card" style="padding:12px 14px;margin-bottom:8px">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center">'+
+          '<div style="font-size:14px;font-weight:700;color:var(--negro)">'+i.producto+'</div>'+
+          '<div style="font-size:22px;font-weight:700;color:'+(i.alerta?'var(--rojo)':'var(--azul)')+'">'+i.existencia+'</div>'+
+        '</div>'+
+        '<div style="font-size:12px;color:var(--gris4);margin-top:2px">Mínimo: '+i.stockMinimo+'</div>'+
+        '<div class="progress-bar"><div class="progress-fill" style="width:'+Math.min(100,Math.round(i.existencia/(i.stockMinimo||1)*50))+'%;background:'+(i.alerta?'var(--rojo)':'var(--verde)')+'"></div></div>'+
+      '</div>';
+    });
+    h+='</div>';
+    H('content',h);
+  }
+  google.script.run.withSuccessHandler(function(d){fiscal=d||[];f=true;render();}).obtenerInventarioBodega('fiscal');
+  google.script.run.withSuccessHandler(function(d){almacen=d||[];a=true;render();}).obtenerInventarioBodega('almacen');
+}
+
+function switchBodegaM(btn, tab){
+  document.querySelectorAll('.tab-pill').forEach(function(b){b.classList.remove('on')});
+  btn.classList.add('on');
+  C('bodFis').style.display=tab==='fis'?'':'none';
+  C('bodAlm').style.display=tab==='alm'?'':'none';
+}
+
+function showTraspasoM(){
+  setTitle('Nuevo Traspaso');
+  showBack(true);
+  nav(function(){
+    H('content',load());
+    google.script.run.withSuccessHandler(function(items){
+      var h=
+        '<div class="form-group"><label class="form-label">Bodega Origen</label>'+
+          '<select id="tOr" class="form-select" onchange="cambiarOrigenTras()"><option value="fiscal">Bodega Fiscal</option><option value="almacen">Almacén Borbone</option></select></div>'+
+        '<div class="form-group"><label class="form-label">Bodega Destino</label>'+
+          '<select id="tDe" class="form-select"><option value="almacen">Almacén Borbone</option><option value="fiscal">Bodega Fiscal</option></select></div>'+
+        '<div class="form-group"><label class="form-label">Producto *</label>'+
+          '<select id="tProd" class="form-select"><option value="">Selecciona...</option>'+
+          items.map(function(i){return '<option value="'+esc(i.producto)+'">'+i.producto+' ('+i.existencia+')</option>';}).join('')+
+          '</select></div>'+
+        '<div class="form-group"><label class="form-label">Cantidad *</label>'+
+          '<input type="number" id="tCant" class="form-input" min="1" placeholder="0"></div>'+
+        '<div class="form-group"><label class="form-label">Referencia</label>'+
+          '<input type="text" id="tRef" class="form-input" placeholder="OC-000001 o manual"></div>'+
+        '<button id="btnTras" class="btn btn-azul" onclick="ejecutarTraspasoM()">🔄 Ejecutar Traspaso</button>'+
+        '<button class="btn btn-gris" onclick="goBack()">Cancelar</button>';
+      H('content',h);
+    }).withFailureHandler(function(e){H('content',err(e));}).obtenerInventarioBodega('fiscal');
+  });
+}
+
+function cambiarOrigenTras(){
+  var or=C('tOr').value;
+  google.script.run.withSuccessHandler(function(items){
+    var s=C('tProd');if(!s)return;
+    s.innerHTML='<option value="">Selecciona...</option>'+items.map(function(i){return '<option value="'+esc(i.producto)+'">'+i.producto+' ('+i.existencia+')</option>';}).join('');
+  }).obtenerInventarioBodega(or);
+}
+
+function ejecutarTraspasoM(){
+  var or=C('tOr').value,de=C('tDe').value,prod=C('tProd').value,cant=Number(C('tCant').value||0);
+  if(!prod||cant<=0){toast('⚠ Completa todos los campos');return;}
+  if(or===de){toast('⚠ Origen y destino no pueden ser iguales');return;}
+  var btn=C('btnTras');btn.disabled=true;btn.textContent='Procesando...';
+  google.script.run
+    .withSuccessHandler(function(r){
+      btn.disabled=false;btn.textContent='🔄 Ejecutar Traspaso';
+      if(r.status==='OK'){toast('✅ Traspaso realizado');goBack();showBodegasM();}
+      else if(r.status==='SIN_STOCK') toast('⚠ Sin stock suficiente. Existencia: '+r.existencia);
+      else toast('Error: '+r.status);
+    })
+    .withFailureHandler(function(e){btn.disabled=false;btn.textContent='🔄 Ejecutar Traspaso';toast('Error: '+e);})
+    .trasladarEntreBogegas(prod,cant,or,de,C('tRef').value||'',G.nombre);
+}
+
+// ══════════════════════════════
+// PEDIDOS (VENTAS)
+// ══════════════════════════════
+function showPedidosM(){
+  setActiveNav('ped');
+  setTitle('Pedidos');
+  showBack(false);
+  H('content',load());
+  google.script.run.withSuccessHandler(function(peds){
+    var h='<button class="btn btn-verde" onclick="showNuevoPedidoM()" style="margin-bottom:14px">➕ Nuevo Pedido</button>';
+    if(!peds.length){h+=empty('🛒','Sin pedidos','');H('content',h);return;}
+    peds.slice(0,20).forEach(function(p){
+      h+='<div class="list-item">'+
+        '<div class="li-main">'+
+          '<div class="li-title">'+p.cliente+'</div>'+
+          '<div class="li-sub">'+p.folio+' · '+p.fecha+'</div>'+
+        '</div>'+
+        '<div class="li-right">'+bdg(p.estatus||'Pendiente')+'</div>'+
+      '</div>';
+    });
+    H('content',h);
+  }).withFailureHandler(function(e){H('content',err(e));}).obtenerPedidos();
+}
+
+function showNuevoPedidoM(){
+  setTitle('Nuevo Pedido');
+  showBack(true);
+  nav(function(){
+    H('content',load());
+    window._pedLM=1;
+    google.script.run.withSuccessHandler(function(clis){
+      var h=
+        '<div class="form-group"><label class="form-label">Cliente *</label>'+
+          '<select id="npCliM" class="form-select" onchange="cargarProdsM(this.value)"><option value="">Selecciona...</option>'+
+          clis.map(function(c){return '<option>'+c+'</option>';}).join('')+
+          '</select></div>'+
+        '<div class="form-group"><label class="form-label">Tipo de documento</label>'+
+          '<select id="npDocM" class="form-select"><option>Remisión</option><option>Factura</option></select></div>'+
+        '<div class="section-title" style="margin-top:4px">Productos</div>'+
+        '<div id="npProdsM">'+lineaPedidoM(0)+'</div>'+
+        '<button class="btn btn-gris" onclick="agregarLineaM()" style="margin-bottom:14px">+ Agregar producto</button>'+
+        '<div class="form-group"><label class="form-label">Observaciones</label>'+
+          '<textarea id="npObsM" class="form-textarea"></textarea></div>'+
+        '<button id="btnNPM" class="btn btn-verde" onclick="guardarPedidoM()">💾 Guardar Pedido</button>'+
+        '<button class="btn btn-gris" onclick="goBack()">Cancelar</button>';
+      H('content',h);
+    }).obtenerClientes();
+  });
+}
+
+function lineaPedidoM(i){
+  return '<div id="npLM'+i+'" style="background:white;border-radius:12px;padding:12px;margin-bottom:10px;box-shadow:var(--sombra)">'+
+    '<div class="form-group" style="margin-bottom:8px"><label class="form-label">Producto</label>'+
+      '<select id="npPM'+i+'" class="form-select"><option value="">Selecciona...</option></select></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">'+
+      '<div><label class="form-label">Cantidad</label><input type="number" id="npCM'+i+'" class="form-input" min="1" value="1"></div>'+
+      '<div><label class="form-label">Precio</label><input type="number" id="npPrM'+i+'" class="form-input" step="0.01" value="0"></div>'+
+    '</div>'+
+    (i>0?'<button class="btn btn-gris" style="padding:8px;font-size:12px" onclick="C(\'npLM'+i+'\').remove()">✕ Quitar</button>':'')+
+  '</div>';
+}
+
+function cargarProdsM(cli){
+  if(!cli)return;
+  google.script.run.withSuccessHandler(function(prods){
+    for(var i=0;i<window._pedLM;i++){
+      var s=C('npPM'+i);if(!s)continue;
+      s.innerHTML='<option value="">Selecciona...</option>'+prods.map(function(p){return '<option>'+p+'</option>';}).join('');
+    }
+  }).obtenerProductosParaPedido();
+}
+
+function agregarLineaM(){
+  var wrap=C('npProdsM');
+  var d=document.createElement('div');
+  d.innerHTML=lineaPedidoM(window._pedLM);
+  wrap.appendChild(d.firstChild);
+  var cli=C('npCliM').value;
+  if(cli) cargarProdsM(cli);
+  window._pedLM++;
+}
+
+function guardarPedidoM(){
+  var cli=C('npCliM').value;
+  if(!cli){toast('⚠ Selecciona un cliente');return;}
+  var productos=[];
+  for(var i=0;i<window._pedLM;i++){
+    var p=C('npPM'+i)?.value,c=Number(C('npCM'+i)?.value||0);
+    if(p&&c>0)productos.push({producto:p,cantidad:c});
+  }
+  if(!productos.length){toast('⚠ Agrega al menos un producto');return;}
+  var btn=C('btnNPM');btn.disabled=true;btn.textContent='Guardando...';
+  google.script.run
+    .withSuccessHandler(function(r){
+      btn.disabled=false;btn.textContent='💾 Guardar Pedido';
+      if(r&&r.status==='OK'){toast('✅ Pedido '+r.folio+' creado');goBack();showPedidosM();}
+      else toast('Error al guardar');
+    })
+    .withFailureHandler(function(e){btn.disabled=false;btn.textContent='💾 Guardar Pedido';toast('Error: '+e);})
+    .crearPedidoManual({cliente:cli,documento:C('npDocM').value,sucursal:'',observaciones:C('npObsM').value,productos:productos});
+}
+
+// ══════════════════════════════
+// COBRANZA
+// ══════════════════════════════
+function showCobranzaM(){
+  setActiveNav('cob');
+  setTitle('Cobranza');
+  showBack(false);
+  H('content',load());
+  google.script.run.withSuccessHandler(function(datos){
+    var docs=(datos.documentos||[]).filter(function(d){return d.estatus!=='Pagada';});
+    var h=
+      '<div class="kpi-grid">'+
+        '<div class="kpi naranja"><div class="kpi-label">Por Cobrar</div><div class="kpi-value" style="font-size:16px">'+fmt(datos.saldo||0)+'</div></div>'+
+        '<div class="kpi rojo"><div class="kpi-label">Vencido</div><div class="kpi-value" style="font-size:16px">'+fmt(datos.vencido||0)+'</div></div>'+
+      '</div>'+
+      '<div class="section-title">Documentos pendientes ('+docs.length+')</div>';
+    if(!docs.length){h+=empty('💰','Sin documentos pendientes','¡Al corriente!');H('content',h);return;}
+    docs.forEach(function(d){
+      h+='<div class="list-item">'+
+        '<div class="li-main">'+
+          '<div class="li-title">'+d.cliente+'</div>'+
+          '<div class="li-sub">'+d.documento+' · Vence: '+(d.vencimiento||'-')+'</div>'+
+          '<div style="font-size:16px;font-weight:700;color:var(--rojo);margin-top:4px">'+fmt(d.saldo)+'</div>'+
+        '</div>'+
+        '<div class="li-right">'+
+          bdg(d.estatus||'Pendiente')+
+          '<button class="btn btn-verde btn-sm" onclick="pagoRapidoM(\''+esc(d.documento)+'\',\''+esc(d.cliente)+'\','+d.saldo+')">💰</button>'+
+        '</div>'+
+      '</div>';
+    });
+    H('content',h);
+  }).withFailureHandler(function(e){H('content',err(e));}).obtenerEstadoCuenta('','','','','fecha');
+}
+
+function pagoRapidoM(doc,cli,saldo){
+  setTitle('Registrar Pago');
+  showBack(true);
+  nav(function(){
+    var h=
+      '<div class="alr alr-info"><b>'+doc+'</b> · '+cli+'<br>Saldo: <b>'+fmt(saldo)+'</b></div>'+
+      '<div class="form-group"><label class="form-label">Monto *</label>'+
+        '<input type="number" id="pmMM" class="form-input" value="'+saldo+'" step="0.01"></div>'+
+      '<div class="form-group"><label class="form-label">Método de pago</label>'+
+        '<select id="pmMetM" class="form-select"><option>Transferencia</option><option>Efectivo</option><option>Cheque</option><option>Tarjeta</option></select></div>'+
+      '<div class="form-group"><label class="form-label">Referencia</label>'+
+        '<input type="text" id="pmRefM" class="form-input" placeholder="No. de referencia o SPEI"></div>'+
+      '<button id="btnPM" class="btn btn-verde" onclick="guardarPagoM(\''+esc(doc)+'\')">💰 Confirmar Pago</button>'+
+      '<button class="btn btn-gris" onclick="goBack()">Cancelar</button>';
+    H('content',h);
+  });
+}
+
+function guardarPagoM(doc){
+  var monto=Number(C('pmMM').value||0);
+  if(!monto||monto<=0){toast('⚠ Monto inválido');return;}
+  var btn=C('btnPM');btn.disabled=true;btn.textContent='Registrando...';
+  google.script.run
+    .withSuccessHandler(function(r){if(r.status==='OK'){toast('✅ Pago registrado');goBack();showCobranzaM();}else toast('Error');})
+    .withFailureHandler(function(e){btn.disabled=false;btn.textContent='💰 Confirmar Pago';toast('Error: '+e);})
+    .registrarPago(doc,monto,C('pmMetM').value||'',C('pmRefM').value||'','');
+}
+</script>
+</body>
 </html>
