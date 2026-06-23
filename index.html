@@ -129,7 +129,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;fo
 
 <!-- LOGIN -->
 <div id="login">
-  <div class="login-logo">☕</div>
+  <div class="login-logo" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+    <div style="font-size:28px;line-height:1">☕</div>
+    <div style="font-size:7px;font-weight:900;color:#1565c0;letter-spacing:1px">BORBONE</div>
+  </div>
   <div class="login-title">CAFÉ BORBONE</div>
   <div class="login-sub">Operations & Customer Success</div>
   <div class="login-card">
@@ -300,10 +303,21 @@ function setTitle(t){C('pageTitle').textContent=t;}
 function showBack(show){var b=C('backBtn');if(show)b.classList.add('vis');else b.classList.remove('vis');}
 
 function goBack(){
-  if(_stack.length>1){_stack.pop();var prev=_stack[_stack.length-1];_stack.pop();prev();}
+  if(_stack.length>1){
+    _stack.pop();
+    var prev=_stack[_stack.length-1];
+    _stack.pop();
+    prev();
+  } else {
+    showHome();
+  }
 }
 
-function nav(fn){_stack.push(fn);fn();}
+function nav(fn){
+  _stack.push(fn);
+  showBack(_stack.length>1);
+  fn();
+}
 
 function loginDemo(){
   C('login').style.display='none';
@@ -320,7 +334,7 @@ function buildBottomNav(){
     {id:'agenda',icon:'📅', label:'Agenda',    fn:'showAgendaM'},
     {id:'ops',   icon:'🔧', label:'Servicios', fn:'showServiciosM'},
     {id:'ent',   icon:'🚚', label:'Entregas',  fn:'showEntregasM'},
-    {id:'inv',   icon:'📦', label:'Bodegas',   fn:'showBodegasM'},
+    {id:'mas',   icon:'☰',  label:'Más',       fn:'showMasM'},
   ];
   var h='';
   items.forEach(function(n){
@@ -712,8 +726,8 @@ function showTraspasoM(){
 
 // ── PEDIDOS ──
 function showPedidosM(){
-  setTitle('Pedidos');showBack(true);
-  nav(function(){
+  setTitle('Pedidos');showBack(false);_stack=[];
+  (function(){
     var peds=MOCK.pedidos();
     var h='<button class="btn btn-verde" onclick="showNuevoPedidoM()" style="margin-bottom:14px">➕ Nuevo Pedido</button>';
     peds.forEach(function(p){
@@ -771,8 +785,8 @@ function agregarLineaM(){
 
 // ── COBRANZA ──
 function showCobranzaM(){
-  setTitle('Cobranza');showBack(true);
-  nav(function(){
+  setTitle('Cobranza');showBack(false);_stack=[];
+  (function(){
     var datos=MOCK.estadoCuenta();
     var docs=datos.documentos.filter(function(d){return d.estatus!=='Pagada';});
     var h=
@@ -803,6 +817,7 @@ function pagoRapidoDemoM(doc,saldo){
     var h=
       '<div class="alr alr-info"><b>'+doc+'</b><br>Saldo: <b>'+fmt(saldo)+'</b></div>'+
       '<div class="form-group"><label class="form-label">Monto</label><input type="number" id="pmMM" class="form-input" value="'+saldo+'" step="0.01"></div>'+
+      '<div class="form-group"><label class="form-label">Fecha de pago</label><input type="date" id="pmFecM" class="form-input"></div>'+
       '<div class="form-group"><label class="form-label">Método</label>'+
         '<select id="pmMetM" class="form-select"><option>Transferencia</option><option>Efectivo</option><option>Cheque</option></select></div>'+
       '<div class="form-group"><label class="form-label">Referencia</label><input type="text" id="pmRefM" class="form-input" placeholder="No. SPEI o referencia"></div>'+
