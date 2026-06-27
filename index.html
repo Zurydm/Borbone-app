@@ -687,7 +687,7 @@ function guardarServicioM(cli,fecha,hora,tec){
   var datos={fecha:fecha,hora:hora,cliente:cli,tecnico:tec,diagnostico:C('srvDiag').value,
     actividades:acts.join('<br>'),limpiezaDiaria:(document.querySelector('input[name="lD"]:checked')||{}).value||'',
     resultado:res,visitaAdicional:(document.querySelector('input[name="vis"]:checked')||{}).value||'',
-    recomendacion:C('srvReco').value,recibe:rec,totalFotos:0};
+    recomendacion:C('srvReco').value,recibe:rec,totalFotos:0,lat:'',lng:''};
   var files=Array.from((C('fotoInput')||{files:[]}).files).slice(0,5);
   function enviar(){
     google.script.run.withSuccessHandler(function(){
@@ -695,9 +695,21 @@ function guardarServicioM(cli,fecha,hora,tec){
     }).withFailureHandler(function(e){ btn.disabled=false; btn.textContent='💾 Guardar Servicio'; toast('Error: '+e); })
     .guardarServicio(datos);
   }
-  if(files.length){ datos.evidencias=[]; datos.totalFotos=files.length; var proc=0;
-    files.forEach(function(f){ var r=new FileReader(); r.onload=function(ev){ datos.evidencias.push(ev.target.result); proc++; if(proc===files.length) enviar(); }; r.readAsDataURL(f); });
-  } else enviar();
+  function obtenerUbicacion(callback){
+    if(navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(
+        function(pos){ datos.lat=pos.coords.latitude; datos.lng=pos.coords.longitude; callback(); },
+        function(){ callback(); }, // si falla, guarda sin ubicación
+        {timeout:5000,maximumAge:60000}
+      );
+    } else callback();
+  }
+  function procesarFotos(){
+    if(files.length){ datos.evidencias=[]; datos.totalFotos=files.length; var proc=0;
+      files.forEach(function(f){ var r=new FileReader(); r.onload=function(ev){ datos.evidencias.push(ev.target.result); proc++; if(proc===files.length) enviar(); }; r.readAsDataURL(f); });
+    } else enviar();
+  }
+  obtenerUbicacion(procesarFotos);
 }
 
 // ══════════════════════════════
