@@ -235,8 +235,8 @@ var google = { script: { run: {} } };
 // LOGIN REAL
 // ══════════════════════════════
 function loginReal() {
-  var u = C('loginUser').value.trim();
-  var p = C('loginPass').value;
+  var u = C('lu').value.trim();
+  var p = C('lp').value;
   if (!u || !p) { toast('⚠ Completa usuario y contraseña'); return; }
   var btn = C('btnLogin');
   btn.disabled = true; btn.textContent = 'Verificando...';
