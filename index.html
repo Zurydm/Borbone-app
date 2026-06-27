@@ -238,7 +238,7 @@ function loginReal() {
   var u = C('lu').value.trim();
   var p = C('lp').value;
   if (!u || !p) { toast('⚠ Completa usuario y contraseña'); return; }
-  var btn = C('btnLogin');
+  var btn = C('lbtn');
   btn.disabled = true; btn.textContent = 'Verificando...';
   api('login', {usuario: u, password: p}, function(r) {
     btn.disabled = false; btn.textContent = 'Ingresar';
