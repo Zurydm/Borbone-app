@@ -160,6 +160,105 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;fo
 </div>
 
 <script>
+
+
+// ══════════════════════════════
+// CONFIGURACIÓN API
+// ══════════════════════════════
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbyQFCidMnRnKpMVn9JOmSVhyrdXMptio--vhYlxKGtUZldVT2U5DcVVMcNSXuUBo6-HNw/exec';
+
+function api(fn, params, callback, errCallback) {
+  var url = GAS_URL + '?fn=' + encodeURIComponent(fn);
+  if (params) {
+    Object.keys(params).forEach(function(k) {
+      url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(
+        typeof params[k] === 'object' ? JSON.stringify(params[k]) : params[k]
+      );
+    });
+  }
+  fetch(url)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data && data.error) {
+        if (errCallback) errCallback(data.error);
+        else toast('Error: ' + data.error);
+      } else {
+        callback(data);
+      }
+    })
+    .catch(function(e) {
+      if (errCallback) errCallback(e.toString());
+      else toast('Error de conexión');
+    });
+}
+
+// ══════════════════════════════
+// REEMPLAZAR google.script.run
+// ══════════════════════════════
+var google = { script: { run: {} } };
+(function(){
+  google.script.run.withSuccessHandler = function(okFn) {
+    var _ok = okFn;
+    var _fail = function(e) { toast('Error: ' + e); };
+    var obj = {
+      withFailureHandler: function(fn) { _fail = fn; return obj; },
+      obtenerAgenda:              function() { api('agenda', null, function(d){ okFn(d); }, _fail); },
+      obtenerHistoricoServicios:  function() { api('servicios', null, okFn, _fail); },
+      obtenerDetalleServicio:     function(f){ api('detalleServicio', {folio:f}, okFn, _fail); },
+      guardarServicio:            function(d){ api('guardarServicio', {datos:d}, okFn, _fail); },
+      obtenerEntregas:            function() { api('entregas', null, okFn, _fail); },
+      programarEntrega:           function(f,fe,h,r,o,u){ api('programarEntrega',{folio:f,fecha:fe,hora:h,repartidor:r,obs:o,usuario:u},okFn,_fail); },
+      confirmarEntrega:           function(f,re,fe,h,o,u){ api('confirmarEntrega',{folio:f,recibe:re,fecha:fe,hora:h,obs:o,usuario:u},okFn,_fail); },
+      obtenerPedidos:             function() { api('pedidos', null, okFn, _fail); },
+      crearPedidoManual:          function(d){ api('crearPedido', {datos:d}, okFn, _fail); },
+      obtenerInventarioBodega:    function(b){ api('inventario', {bodega:b||'fiscal'}, okFn, _fail); },
+      trasladarEntreBogegas:      function(p,c,o,d,r,u){ api('traspaso',{producto:p,cantidad:c,origen:o,destino:d,ref:r,usuario:u},okFn,_fail); },
+      obtenerEstadoCuenta:        function() { api('cobranza', null, okFn, _fail); },
+      registrarPago:              function(d,m,met,r,o){ api('registrarPago',{doc:d,monto:m,metodo:met,ref:r,obs:o},okFn,_fail); },
+      obtenerSeguimientos:        function() { api('seguimientos', null, okFn, _fail); },
+      guardarSeguimiento:         function(d){ api('guardarSeguimiento',{datos:d},okFn,_fail); },
+      guardarCita:                function(d){ api('guardarCita',{datos:d},okFn,_fail); },
+      obtenerClientes:            function() { api('clientes', null, okFn, _fail); },
+      obtenerTecnicos:            function() { api('tecnicos', null, okFn, _fail); },
+      obtenerProductosParaPedido: function() { api('productos', null, okFn, _fail); },
+      obtenerEmpleadosActivos:    function() { api('empleados', null, okFn, _fail); },
+      obtenerNotificaciones:      function() { okFn([]); },
+    };
+    return obj;
+  };
+  google.script.run.withFailureHandler = function(fn) {
+    return google.script.run;
+  };
+})();
+
+// ══════════════════════════════
+// LOGIN REAL
+// ══════════════════════════════
+function loginReal() {
+  var u = C('loginUser').value.trim();
+  var p = C('loginPass').value;
+  if (!u || !p) { toast('⚠ Completa usuario y contraseña'); return; }
+  var btn = C('btnLogin');
+  btn.disabled = true; btn.textContent = 'Verificando...';
+  api('login', {usuario: u, password: p}, function(r) {
+    btn.disabled = false; btn.textContent = 'Ingresar';
+    if (r && r.valido) {
+      G.user   = r.usuario;
+      G.nombre = r.nombre;
+      G.rol    = r.rol;
+      C('login').style.display = 'none';
+      C('app').classList.add('visible');
+      C('userAvatar').textContent = (r.nombre||'?')[0].toUpperCase();
+      showHome();
+    } else {
+      toast('⚠ Usuario o contraseña incorrectos');
+    }
+  }, function(e) {
+    btn.disabled = false; btn.textContent = 'Ingresar';
+    toast('Error de conexión: ' + e);
+  });
+}
+
 // ══════════════════════════════
 // MOCK DATA (GitHub demo)
 // ══════════════════════════════
@@ -310,15 +409,6 @@ function resetNav(){
   C('backBtn').classList.remove('vis');
 }
 
-// ══════════════════════════════
-// LOGIN
-// ══════════════════════════════
-function loginDemo(){
-  C('login').style.display='none';
-  C('app').classList.add('visible');
-  C('userAvatar').textContent='A';
-  showHome();
-}
 
 // ══════════════════════════════
 // HOME — solo ícono de inicio en nav
