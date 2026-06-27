@@ -140,7 +140,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;fo
     <input type="text" id="lu" class="login-input" placeholder="Tu usuario" value="admin">
     <label class="login-label">Contraseña</label>
     <input type="password" id="lp" class="login-input" placeholder="••••••••" value="1234">
-    <button id="lbtn" class="login-btn" onclick="loginDemo()">Ingresar</button>
+    <button id="lbtn" class="login-btn" onclick="loginReal()">Ingresar</button>
     <div id="lerr" class="login-err"></div>
   </div>
 </div>
@@ -252,27 +252,12 @@ var _mockHandlers = {
   trasladarEntreBogegas:      function(){ return {status:'OK'}; },
 };
 
-var google = { script: { run: {} } };
-(function(){
-  google.script.run.withSuccessHandler = function(okFn) {
-    var obj = { withFailureHandler: function(){ return obj; } };
-    Object.keys(_mockHandlers).forEach(function(name) {
-      obj[name] = function() {
-        var args = arguments;
-        setTimeout(function() {
-          try { okFn(_mockHandlers[name].apply(null, args)); } catch(e) { okFn([]); }
-        }, 30);
-      };
-    });
-    return obj;
-  };
-  google.script.run.withFailureHandler = function(){ return google.script.run; };
-})();
+
 
 // ══════════════════════════════
 // GLOBALS
 // ══════════════════════════════
-var G = {user:'admin', nombre:'Admin Demo', rol:'Administrador'};
+var G = {user:null, nombre:null, rol:null};
 var _history = []; // navigation history stack
 
 function C(id){ return document.getElementById(id); }
