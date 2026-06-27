@@ -961,12 +961,22 @@ function guardarConfEntregaM(folio){
   var ahora=new Date();
   var fecha=ahora.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'/');
   var hora=ahora.toTimeString().substring(0,5);
-  google.script.run.withSuccessHandler(function(r){
-    btn.disabled=false; btn.textContent='✅ Confirmar';
-    if(r.status==='OK'){ toast('✅ Entrega confirmada'); goBack(); goBack(); }
-    else toast('Error: '+(r.status||''));
-  }).withFailureHandler(function(e){ btn.disabled=false; btn.textContent='✅ Confirmar'; toast('Error: '+e); })
-  .confirmarEntrega(folio, recibe, fecha, hora, C('reO').value, G.nombre);
+  var obs=C('reO').value;
+  function confirmar(lat,lng){
+    google.script.run.withSuccessHandler(function(r){
+      btn.disabled=false; btn.textContent='✅ Confirmar';
+      if(r.status==='OK'){ toast('✅ Entrega confirmada'); goBack(); goBack(); }
+      else toast('Error: '+(r.status||''));
+    }).withFailureHandler(function(e){ btn.disabled=false; btn.textContent='✅ Confirmar'; toast('Error: '+e); })
+    .confirmarEntrega(folio, recibe, fecha, hora, obs+'\nUbicación: '+lat+','+lng, G.nombre);
+  }
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      function(pos){ confirmar(pos.coords.latitude, pos.coords.longitude); },
+      function(){ confirmar('',''); },
+      {timeout:5000,maximumAge:60000}
+    );
+  } else confirmar('','');
 }
 
 // ══════════════════════════════
