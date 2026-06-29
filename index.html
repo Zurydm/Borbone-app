@@ -443,21 +443,25 @@ function renderHome(){
       {icon:'🛒',label:'Pedidos',       fn:'showPedidosM()'},
       {icon:'💰',label:'Cobranza',      fn:'showCobranzaM()'},
       {icon:'📞',label:'Seguimientos',  fn:'showSeguimientosM()'},
+      {icon:'👥',label:'Clientes', fn:'showClientesM()'},
       {icon:'🔔',label:'Notificaciones',fn:'showNotifsM()'},
     ],
     'Técnico': [
       {icon:'📅',label:'Agenda',        fn:'showAgendaM()'},
       {icon:'🔧',label:'Mis Servicios', fn:'showServiciosM()'},
       {icon:'📞',label:'Seguimientos',  fn:'showSeguimientosM()'},
+      {icon:'👥',label:'Clientes', fn:'showClientesM()'},
       {icon:'🔔',label:'Notificaciones',fn:'showNotifsM()'},
     ],
     'Entregas': [
       {icon:'🚚',label:'Mis Entregas',  fn:'showEntregasM()'},
+      {icon:'👥',label:'Clientes', fn:'showClientesM()'},
       {icon:'🔔',label:'Notificaciones',fn:'showNotifsM()'},
     ],
     'Ventas': [
       {icon:'🛒',label:'Pedidos',       fn:'showPedidosM()'},
       {icon:'💰',label:'Cobranza',      fn:'showCobranzaM()'},
+      {icon:'👥',label:'Clientes', fn:'showClientesM()'},
       {icon:'🔔',label:'Notificaciones',fn:'showNotifsM()'},
     ],
   };
@@ -1262,6 +1266,184 @@ function showNotifsM(){
   });
 }
 
+
+
+// ══════════════════════════════
+// CLIENTES APP MÓVIL
+// ══════════════════════════════
+function showClientesM(){
+  setTitle('Clientes');
+  pushPage(function(){
+    H('content', load());
+    google.script.run.withSuccessHandler(function(clis){
+      var h =
+        '<div style="margin-bottom:12px">'+
+          '<input type="text" id="cliBusq" class="form-input" placeholder="Buscar cliente..." '+
+            'oninput="filtClientesM()" style="width:100%">'+
+        '</div>';
+      if(G.rol==='Administrador'){
+        h += '<button class="btn btn-azul btn-sm" style="margin-bottom:14px;width:100%" onclick="showFormClienteM(null)">➕ Nuevo Cliente</button>';
+      }
+      if(!clis||!clis.length){ h+=empty('👥','Sin clientes',''); H('content',h); return; }
+      h += '<div id="listaClis">';
+      clis.forEach(function(c){
+        var act = c.activo==='SI'||c.activo===true;
+        h += '<div class="list-item cli-item" data-b="'+(c.cliente||'').toLowerCase()+'" onclick="verClienteM(\''+esc(c.cliente||'')+'\')">'+
+          '<div class="li-main">'+
+            '<div class="li-title">'+c.cliente+'</div>'+
+            '<div class="li-sub">'+(c.contacto||'Sin contacto')+(c.telefono?' · '+c.telefono:'')+'</div>'+
+          '</div>'+
+          '<div class="li-right">'+
+            '<span class="bdg '+(act?'bdg-gr':'bdg-gy')+'">'+(act?'Activo':'Inactivo')+'</span>'+
+            '<span class="li-arrow">›</span>'+
+          '</div>'+
+        '</div>';
+      });
+      h += '</div>';
+      H('content', h);
+      window._clisDataM = clis;
+    }).withFailureHandler(function(e){ H('content', errMsg(e)); }).obtenerListaClientes();
+  });
+}
+
+function filtClientesM(){
+  var b = (C('cliBusq').value||'').toLowerCase();
+  document.querySelectorAll('.cli-item').forEach(function(el){
+    el.style.display = (!b || (el.dataset.b||'').includes(b)) ? '' : 'none';
+  });
+}
+
+function verClienteM(nombre){
+  var cli = (window._clisDataM||[]).find(function(c){ return c.cliente===nombre; })||{};
+  setTitle(nombre);
+  pushPage(function(){
+    var h =
+      '<div class="card">'+
+        (cli.contacto?'<div class="card-row"><span class="card-label">Contacto</span><span class="card-value">'+cli.contacto+'</span></div>':'')+
+        (cli.telefono?'<div class="card-row"><span class="card-label">Teléfono</span>'+
+          '<span class="card-value"><a href="tel:'+cli.telefono+'" style="color:var(--azul)">'+cli.telefono+'</a></span></div>':'')+
+        (cli.email?'<div class="card-row"><span class="card-label">Email</span>'+
+          '<span class="card-value"><a href="mailto:'+cli.email+'" style="color:var(--azul)">'+cli.email+'</a></span></div>':'')+
+        (cli.direccion?'<div class="card-row"><span class="card-label">Dirección</span><span class="card-value">'+cli.direccion+'</span></div>':'')+
+        (cli.rfc?'<div class="card-row"><span class="card-label">RFC</span><span class="card-value">'+cli.rfc+'</span></div>':'')+
+        '<div class="card-row"><span class="card-label">Crédito</span><span class="card-value">'+(cli.diasCredito||0)+' días</span></div>'+
+        '<div class="card-row"><span class="card-label">Preventivo</span><span class="card-value">'+(cli.preventivo==='SI'?'✅ Sí':'No')+'</span></div>'+
+      '</div>'+
+      '<div style="display:flex;gap:10px;margin-bottom:14px">'+
+        (cli.telefono?'<a href="https://wa.me/52'+cli.telefono.replace(/\D/g,'')+'" target="_blank" class="btn btn-verde" style="flex:1;text-align:center;text-decoration:none">💬 WhatsApp</a>':'')+
+        '<button class="btn btn-azul" style="flex:1" onclick="showNuevaCitaCliM(\''+esc(nombre)+'\')">📅 Agendar Cita</button>'+
+      '</div>'+
+      (G.rol==='Administrador'?'<button class="btn btn-gris" style="width:100%;margin-bottom:14px" onclick="showFormClienteM(\''+esc(nombre)+'\')">✏️ Editar Cliente</button>':'')+
+      '<div class="section-title">Últimos Servicios</div>'+
+      '<div id="servsCli">'+load()+'</div>';
+    H('content', h);
+    // Cargar servicios del cliente
+    google.script.run.withSuccessHandler(function(servs){
+      var sh = '';
+      if(!servs||!servs.length){ sh=empty('🔧','Sin servicios registrados',''); }
+      else {
+        servs.slice(0,5).forEach(function(s){
+          sh += '<div class="list-item">'+
+            '<div class="li-main">'+
+              '<div class="li-title">'+s.folio+'</div>'+
+              '<div class="li-sub">'+s.fecha+' · '+s.tecnico+'</div>'+
+            '</div>'+
+            '<div class="li-right">'+(s.resultado?bdg(s.resultado):bdg('Pendiente'))+'</div>'+
+          '</div>';
+        });
+      }
+      H('servsCli', sh);
+    }).withFailureHandler(function(){ H('servsCli', ''); }).obtenerServiciosCliente(nombre);
+  });
+}
+
+function showNuevaCitaCliM(cliente){
+  setTitle('Nueva Cita — '+cliente);
+  pushPage(function(){
+    H('content', load());
+    google.script.run.withSuccessHandler(function(tecs){
+      var h =
+        '<div class="alr alr-info" style="margin-bottom:14px"><b>Cliente:</b> '+cliente+'</div>'+
+        '<div class="form-group"><label class="form-label">Fecha *</label>'+
+          '<input type="date" id="ncFecC" class="form-input"></div>'+
+        '<div class="form-group"><label class="form-label">Hora</label>'+
+          '<input type="time" id="ncHorC" class="form-input"></div>'+
+        '<div class="form-group"><label class="form-label">Técnico *</label>'+
+          '<select id="ncTecC" class="form-select"><option value="">Selecciona...</option>'+
+          tecs.map(function(t){ return '<option>'+t+'</option>'; }).join('')+
+          '</select></div>'+
+        '<div class="form-group"><label class="form-label">Tipo</label>'+
+          '<select id="ncTipC" class="form-select"><option>Preventivo</option><option>Correctivo</option><option>Instalación</option><option>Capacitación</option></select></div>'+
+        '<div class="form-group"><label class="form-label">Observaciones</label>'+
+          '<textarea id="ncObsC" class="form-textarea" placeholder="Notas..."></textarea></div>'+
+        '<button id="btnNCC" class="btn btn-verde" onclick="guardarCitaCliM(\''+esc(cliente)+'\')">💾 Guardar Cita</button>'+
+        '<button class="btn btn-gris" onclick="goBack()">‹ Volver</button>';
+      H('content', h);
+    }).withFailureHandler(function(){ H('content', errMsg('Error al cargar técnicos')); }).obtenerTecnicos();
+  });
+}
+
+function guardarCitaCliM(cliente){
+  var fec=C('ncFecC').value, tec=C('ncTecC').value;
+  if(!fec||!tec){ toast('⚠ Completa fecha y técnico'); return; }
+  var btn=C('btnNCC'); btn.disabled=true; btn.textContent='Guardando...';
+  google.script.run.withSuccessHandler(function(r){
+    btn.disabled=false; btn.textContent='💾 Guardar Cita';
+    toast('✅ Cita creada'); goBack(); goBack();
+  }).withFailureHandler(function(e){ btn.disabled=false; btn.textContent='💾 Guardar Cita'; toast('Error: '+e); })
+  .guardarCita({cliente:cliente,fecha:C('ncFecC').value,hora:C('ncHorC').value,
+    tecnico:tec,tipo:C('ncTipC').value,observaciones:C('ncObsC').value,sucursal:'',folioSeguimiento:''});
+}
+
+function showFormClienteM(nombre){
+  var cli = nombre?(window._clisDataM||[]).find(function(c){ return c.cliente===nombre; })||{}:{};
+  var esNew = !nombre;
+  setTitle(esNew?'Nuevo Cliente':'Editar: '+nombre);
+  pushPage(function(){
+    var h =
+      '<div class="form-group"><label class="form-label">Cliente *</label>'+
+        '<input type="text" id="fcNom" class="form-input" value="'+(cli.cliente||'')+'"'+(esNew?'':' disabled')+'></div>'+
+      '<div class="form-group"><label class="form-label">Contacto</label>'+
+        '<input type="text" id="fcCon" class="form-input" value="'+(cli.contacto||'')+'"></div>'+
+      '<div class="form-group"><label class="form-label">Teléfono</label>'+
+        '<input type="tel" id="fcTel" class="form-input" value="'+(cli.telefono||'')+'"></div>'+
+      '<div class="form-group"><label class="form-label">Email</label>'+
+        '<input type="email" id="fcEm" class="form-input" value="'+(cli.email||'')+'"></div>'+
+      '<div class="form-group"><label class="form-label">Dirección</label>'+
+        '<input type="text" id="fcDir" class="form-input" value="'+(cli.direccion||'')+'"></div>'+
+      '<div class="form-group"><label class="form-label">RFC</label>'+
+        '<input type="text" id="fcRfc" class="form-input" value="'+(cli.rfc||'')+'"></div>'+
+      '<div class="form-group"><label class="form-label">Días de Crédito</label>'+
+        '<input type="number" id="fcCred" class="form-input" value="'+(cli.diasCredito||0)+'"></div>'+
+      '<div class="form-group"><label class="form-label">Activo</label>'+
+        '<select id="fcAct" class="form-select">'+
+          '<option value="SI"'+(cli.activo==='SI'||!cli.activo?' selected':'')+'>Sí</option>'+
+          '<option value="NO"'+(cli.activo==='NO'?' selected':'')+'>No</option>'+
+        '</select></div>'+
+      '<button id="btnFC" class="btn btn-verde" onclick="guardarClienteM('+(cli.fila||'null')+')">💾 Guardar</button>'+
+      '<button class="btn btn-gris" onclick="goBack()">‹ Volver</button>';
+    H('content', h);
+  });
+}
+
+function guardarClienteM(fila){
+  var nom = C('fcNom').value.trim();
+  if(!nom){ toast('⚠ El nombre es obligatorio'); return; }
+  var btn=C('btnFC'); btn.disabled=true; btn.textContent='Guardando...';
+  var datos={cliente:nom,contacto:C('fcCon').value,telefono:C('fcTel').value,
+    email:C('fcEm').value,direccion:C('fcDir').value,rfc:C('fcRfc').value,
+    diasCredito:Number(C('fcCred').value||0),activo:C('fcAct').value,
+    factura:'Remisión',observaciones:'',frecuencia:0,preventivo:'NO',
+    idCliente:'',fila:fila};
+  google.script.run.withSuccessHandler(function(r){
+    btn.disabled=false; btn.textContent='💾 Guardar';
+    if(r.status==='OK'){ toast('✅ Cliente guardado'); goBack(); }
+    else toast('Error al guardar');
+  }).withFailureHandler(function(e){ btn.disabled=false; btn.textContent='💾 Guardar'; toast('Error: '+e); })
+  .guardarCliente(datos);
+}
+  
+  
 </script>
 </body>
 </html>
